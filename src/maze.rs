@@ -5,29 +5,34 @@ use std::fs::File;
 use std::io::{BufReader, Error, BufRead, ErrorKind};
 use std::fmt;
 use sdl2::render::Renderer;
-use sdl2::rect::Rect;
+use sdl2::rect::{Rect, Point};
 use sdl2::pixels::Color;
 use rand::Rng;
 use rand::distributions::{IndependentSample, Range};
 
+pub enum Direction {
+    Left,
+    Right,
+    Down,
+    Up,
+}
+
 pub enum Piece {
     Empty,
-    Player,
+    Player(Direction),
     Boulder,
     Exit,
 }
 
-impl fmt::Display for Piece {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let repr = match self {
-            &Piece::Empty => ' ',
-            &Piece::Player => 'O',
-            &Piece::Boulder => '#',
-            &Piece::Exit => 'X',
-        };
+fn render_player(renderer: &mut Renderer<'static>, dir: &Direction, x: i32, y: i32, width: i32, height: i32) {
+    let points = match dir {
+        &Direction::Left => vec!(Point::new(x+(width/2), y+height), Point::new(x, y+(height/2)), Point::new(x+(width/2), y)),
+        &Direction::Right => vec!(Point::new(x+(width/2), y+height), Point::new(x+width, y+(height/2)), Point::new(x+(width/2), y)),
+        &Direction::Up => vec!(Point::new(x, y+(height/2)), Point::new(x+(width/2), y), Point::new(x+width, (y+height/2))),
+        &Direction::Down => vec!(Point::new(x, y+(height/2)), Point::new(x+(width/2), y+height), Point::new(x+width, (y+height/2))),
+    };
 
-        write!(f, "{}", repr)
-    }
+    renderer.draw_lines(&points);
 }
 
 pub struct Maze {
@@ -51,7 +56,6 @@ impl Maze {
                 let piece = match sym {
                     '#' => Piece::Boulder,
                     'X' => Piece::Exit,
-                    'O' => Piece::Player,
                     ' ' => Piece::Empty,
                     _ => return Err(Error::new(ErrorKind::Other, "invalid map")) ,
                 };
@@ -82,14 +86,17 @@ impl Maze {
 
         for (y, row) in self.pieces.iter().enumerate() {
             for (x, piece) in row.iter().enumerate() {
+                let x_loc = (x as i32) * (width as i32);
+                let y_loc = (y as i32) * (height as i32);  
                 match piece {
                     &Piece::Boulder => renderer.set_draw_color(grey),
                     &Piece::Empty => renderer.set_draw_color(white),
                     &Piece::Exit => renderer.set_draw_color(yellow),
-                    &Piece::Player => renderer.set_draw_color(brown),
+                    &Piece::Player(ref dir) =>  {
+                        render_player(renderer, dir, x_loc, y_loc, width as i32, height as i32);
+                        continue;
+                    }
                 }
-                let x_loc = (x as i32) * (width as i32);
-                let y_loc = (y as i32) * (height as i32);        
                 let rect = Rect::new(x_loc, y_loc, width, height);
 
                 renderer.draw_rect(rect);
@@ -109,23 +116,11 @@ impl Maze {
 
             match self.pieces[x as usize][y as usize] {
                 Piece::Empty => {
-                    self.pieces[x as usize][y as usize] = Piece::Player;
+                    self.pieces[x as usize][y as usize] = Piece::Player(Direction::Up);
                     break;
                 },
                 _ => continue,
             }
         };
-    }
-}
-
-impl fmt::Display for Maze {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        for row in self.pieces.iter() {
-            for col in row.iter() {
-                write!(f, "{}", col);
-            }
-            write!(f, "\r\n");
-        }
-        write!(f, "\r\n")
     }
 }
