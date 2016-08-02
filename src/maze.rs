@@ -1,6 +1,11 @@
+extern crate sdl2;
+
 use std::fs::File;
 use std::io::{BufReader, Error, BufRead, ErrorKind};
 use std::fmt;
+use sdl2::render::Renderer;
+use sdl2::rect::Rect;
+use sdl2::pixels::Color;
 
 pub enum Piece {
     Empty,
@@ -23,8 +28,8 @@ impl fmt::Display for Piece {
 }
 
 pub struct Maze {
-    rows: u16,
-    cols: u16,
+    rows: u32,
+    cols: u32,
     pub pieces: Vec<Vec<Piece>>,
 }
 
@@ -53,14 +58,40 @@ impl Maze {
             rows.push(col);
         };
 
-        let r = rows.len() as u16;
-        let c = rows[0].len() as u16;
+        let r = rows.len() as u32;
+        let c = rows[0].len() as u32;
 
         Ok(Maze {
             rows: r,
             cols: c,
             pieces: rows,
         })
+    }
+
+    pub fn render(&self, renderer: &mut Renderer<'static>, w_height: u32, w_width: u32) {
+        let height: u32 = w_height / self.rows;
+        let width: u32 = w_width / self.cols;
+
+        let grey = Color::RGB(128, 128, 128);
+        let white = Color::RGB(255, 255, 255);
+        let yellow = Color::RGB(255, 255, 0);
+        let brown = Color::RGB(139, 69, 19);
+
+        for (y, row) in self.pieces.iter().enumerate() {
+            for (x, piece) in row.iter().enumerate() {
+                match piece {
+                    &Piece::Boulder => renderer.set_draw_color(grey),
+                    &Piece::Empty => renderer.set_draw_color(white),
+                    &Piece::Exit => renderer.set_draw_color(yellow),
+                    &Piece::Player => renderer.set_draw_color(brown),
+                }
+                let x_loc = (x as i32) * (width as i32);
+                let y_loc = (y as i32) * (height as i32);        
+                let rect = Rect::new(x_loc, y_loc, width, height);
+
+                renderer.draw_rect(rect);
+            }
+        }
     }
 }
 
