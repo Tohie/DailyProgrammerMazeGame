@@ -1,0 +1,7 @@
+[package]
+name = "maze_game"
+version = "0.1.0"
+authors = ["Scott"]
+
+[dependencies]
+sdl2 = "0.22"
