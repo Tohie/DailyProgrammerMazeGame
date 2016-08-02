@@ -5,3 +5,4 @@ authors = ["Scott"]
 
 [dependencies]
 sdl2 = "0.22"
+rand = "0.3"

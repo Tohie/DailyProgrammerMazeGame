@@ -1,4 +1,5 @@
 extern crate sdl2;
+extern crate rand;
 
 use std::fs::File;
 use std::io::{BufReader, Error, BufRead, ErrorKind};
@@ -6,6 +7,8 @@ use std::fmt;
 use sdl2::render::Renderer;
 use sdl2::rect::Rect;
 use sdl2::pixels::Color;
+use rand::Rng;
+use rand::distributions::{IndependentSample, Range};
 
 pub enum Piece {
     Empty,
@@ -92,6 +95,26 @@ impl Maze {
                 renderer.draw_rect(rect);
             }
         }
+    }
+
+    pub fn add_player(&mut self) {
+        let mut rng = rand::thread_rng();
+
+        let row_range = Range::new(1, self.rows);
+        let col_range = Range::new(1, self.cols);
+
+        loop {
+            let x = row_range.ind_sample(&mut rng);
+            let y = col_range.ind_sample(&mut rng);
+
+            match self.pieces[x as usize][y as usize] {
+                Piece::Empty => {
+                    self.pieces[x as usize][y as usize] = Piece::Player;
+                    break;
+                },
+                _ => continue,
+            }
+        };
     }
 }
 

@@ -1,4 +1,5 @@
 extern crate sdl2;
+extern crate rand;
 
 mod maze;
 
@@ -10,7 +11,8 @@ pub fn main() {
     let width = 800;
     let height = 600;
 
-    let map = maze::Maze::from_file("./res/map.txt").unwrap();
+    let mut map = maze::Maze::from_file("./res/map.txt").unwrap();
+    map.add_player();
 
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
