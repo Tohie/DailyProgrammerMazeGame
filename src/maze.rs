@@ -23,6 +23,12 @@ pub enum Piece {
     Exit,
 }
 
+pub enum GameState {
+    Won,
+    InvalidMove,
+    Moved,
+}
+
 fn render_player(renderer: &mut Renderer<'static>, dir: &Direction, x: i32, y: i32, width: i32, height: i32) {
     let points = match dir {
         &Direction::Left => vec!(Point::new(x+(width/2), y+height), Point::new(x, y+(height/2)), Point::new(x+(width/2), y)),
@@ -137,13 +143,15 @@ impl Maze {
         None
     }
 
-    fn change_player_dir(&mut self, new_dir: Direction) {
+    fn change_player_dir(&mut self, new_dir: Direction) -> GameState {
         let (x, y, _) = self.find_player().unwrap();
 
         self.pieces[y][x] = Piece::Player(new_dir);
+
+        GameState::Moved
     }
 
-    fn move_player_forward(&mut self) -> bool {
+    fn move_player_forward(&mut self) -> GameState {
         let (x, y, dir) = self.find_player().unwrap();
 
         let (new_x, new_y) = match self.pieces[y][x] {
@@ -151,7 +159,7 @@ impl Maze {
             Piece::Player(Direction::Right) => (x+1, y),
             Piece::Player(Direction::Up) => (x, y-1),
             Piece::Player(Direction::Down) => (x, y+1),
-            _ => return false
+            _ => panic!("find_player returned non player location")
         };
 
         if new_x < (self.cols as usize) && new_y < (self.rows as usize) {
@@ -160,20 +168,21 @@ impl Maze {
                     self.pieces[new_y][new_x] = Piece::Player(dir);
                     self.pieces[y][x] = Piece::Empty;
                 },
-                _ => return false
+                Piece::Exit => return GameState::Won,
+                _ => return GameState::InvalidMove
             }
         }
 
-        true
+        GameState::Moved
     }
 
-    pub fn move_player(&mut self, req_dir: Direction) {
+    pub fn move_player(&mut self, req_dir: Direction) -> GameState {
         let (_, _, dir) = self.find_player().unwrap();
 
         if dir == req_dir {
-            self.move_player_forward();
+            self.move_player_forward()
         } else {
-            self.change_player_dir(req_dir);
+            self.change_player_dir(req_dir)
         }
     }
 }

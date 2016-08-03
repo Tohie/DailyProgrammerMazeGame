@@ -8,15 +8,14 @@ use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
 use sdl2::rect::Rect;
 use maze::Direction;
+use maze::GameState;
 
 pub fn main() {
-    let mut map = maze::Maze::from_file("./res/map.txt").unwrap();
+    let mut map = make_new_game();
     let width = 10*map.cols;
     let height = 10*map.rows;
     
     println!("width: {}, height: {}", width, height);
-    
-    map.add_player();
 
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
@@ -37,10 +36,23 @@ pub fn main() {
                 Event::Quit {..} | Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
                     break 'running
                 },
-                Event::KeyDown { keycode: Some(Keycode::Left), .. } => map.move_player(Direction::Left),
-                Event::KeyDown { keycode: Some(Keycode::Right), .. } => map.move_player(Direction::Right),
-                Event::KeyDown { keycode: Some(Keycode::Up), .. } => map.move_player(Direction::Up),
-                Event::KeyDown { keycode: Some(Keycode::Down), .. } => map.move_player(Direction::Down),
+                Event::KeyDown { keycode: Some(kc), .. } => {
+                    let dir = match kc {
+                        Keycode::Left => Direction::Left,
+                        Keycode::Right => Direction::Right,
+                        Keycode::Up => Direction::Up,
+                        Keycode::Down => Direction::Down,
+                        _ => Direction::Up,
+                    };
+
+                    match map.move_player(dir) {
+                        GameState::Won => {
+                            println!("You win!");
+                            map = make_new_game();
+                        },
+                        _ => continue,
+                    };
+                }
                 _ => {}
             }
         }
@@ -51,4 +63,11 @@ pub fn main() {
         map.render(&mut renderer);
         renderer.present();
     }
+}
+
+fn make_new_game() -> maze::Maze {
+    let mut map = maze::Maze::from_file("./res/map.txt").unwrap();
+    map.add_player();
+
+    map
 }
