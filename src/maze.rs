@@ -156,12 +156,16 @@ impl Maze {
     }
 
     pub fn add_player(&mut self) {
-        self.add_piece(Piece::Player(Direction::Up));
+        let mut rng = rand::thread_rng();
+
+        self.add_piece(Piece::Player(rng.gen()));
     }
 
     pub fn add_trolls(&mut self, amount: usize) {
+        let mut rng = rand::thread_rng();
+
         for _ in 0..amount {
-            self.add_piece(Piece::Troll(Direction::Up));
+            self.add_piece(Piece::Troll(rng.gen()));
         }
     }
 
