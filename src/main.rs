@@ -53,6 +53,10 @@ pub fn main() {
                             println!("You win!");
                             map = make_new_game();
                         },
+                        GameState::Dead => {
+                            println!("You were killed. RIP :(");
+                            map = make_new_game();
+                        }
                         _ => continue,
                     };
                 }
@@ -71,6 +75,7 @@ pub fn main() {
 fn make_new_game() -> maze::Maze {
     let mut map = maze::Maze::from_file("./res/map.txt").unwrap();
     map.add_player();
+    map.add_trolls(3);
 
     map
 }

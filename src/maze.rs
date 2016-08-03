@@ -30,12 +30,14 @@ pub enum Piece {
     Player(Direction),
     Boulder,
     Exit,
+    Troll,
 }
 
 pub enum GameState {
     Won,
     InvalidMove,
     Moved,
+    Dead
 }
 
 fn render_player(renderer: &mut Renderer<'static>, dir: &Direction, x: i32, y: i32, width: i32, height: i32) {
@@ -106,6 +108,7 @@ impl Maze {
                     &Piece::Boulder => renderer.set_draw_color(grey),
                     &Piece::Empty => renderer.set_draw_color(white),
                     &Piece::Exit => renderer.set_draw_color(yellow),
+                    &Piece::Troll => renderer.set_draw_color(brown),
                     &Piece::Player(ref dir) =>  {
                         renderer.set_draw_color(brown);
                         render_player(renderer, dir, x_loc, y_loc, width as i32, height as i32);
@@ -119,7 +122,7 @@ impl Maze {
         }
     }
 
-    pub fn add_player(&mut self) {
+    fn add_piece(&mut self, piece: Piece) {
         let mut rng = rand::thread_rng();
 
         let row_range = Range::new(1, self.rows);
@@ -131,12 +134,22 @@ impl Maze {
 
             match self.pieces[x as usize][y as usize] {
                 Piece::Empty => {
-                    self.pieces[x as usize][y as usize] = Piece::Player(Direction::Up);
+                    self.pieces[x as usize][y as usize] = piece;
                     break;
                 },
                 _ => continue,
             }
         };
+    }
+
+    pub fn add_player(&mut self) {
+        self.add_piece(Piece::Player(Direction::Up));
+    }
+
+    pub fn add_trolls(&mut self, amount: usize) {
+        for _ in 0..amount {
+            self.add_piece(Piece::Troll);
+        }
     }
 
     fn find_player(&self) -> Option<(usize, usize, Direction)> {
@@ -181,7 +194,8 @@ impl Maze {
                         }
                         _ => return GameState::InvalidMove,
                     }
-                }
+                },
+                Piece::Troll => return GameState::Dead,
                 Piece::Exit => return GameState::Won,
                 _ => return GameState::InvalidMove
             }
