@@ -42,7 +42,10 @@ pub fn main() {
                         Keycode::Right => Direction::Right,
                         Keycode::Up => Direction::Up,
                         Keycode::Down => Direction::Down,
-                        _ => Direction::Up,
+                        _ => {
+                            println!("Invalid key");
+                            continue;
+                        },
                     };
 
                     match map.move_player(dir) {
