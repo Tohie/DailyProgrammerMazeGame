@@ -3,13 +3,12 @@ extern crate rand;
 
 use std::fs::File;
 use std::io::{BufReader, Error, BufRead, ErrorKind};
-use std::fmt;
 use sdl2::render::Renderer;
 use sdl2::rect::{Rect, Point};
 use sdl2::pixels::Color;
-use rand::Rng;
 use rand::distributions::{IndependentSample, Range};
 
+#[derive(Clone, Copy, PartialEq)]
 pub enum Direction {
     Left,
     Right,
@@ -32,12 +31,12 @@ fn render_player(renderer: &mut Renderer<'static>, dir: &Direction, x: i32, y: i
         &Direction::Down => vec!(Point::new(x, y+(height/2)), Point::new(x+(width/2), y+height), Point::new(x+width, (y+height/2))),
     };
 
-    renderer.draw_lines(&points);
+    renderer.draw_lines(&points).unwrap();
 }
 
 pub struct Maze {
-    rows: u32,
-    cols: u32,
+    pub rows: u32,
+    pub cols: u32,
     pub pieces: Vec<Vec<Piece>>,
 }
 
@@ -75,9 +74,9 @@ impl Maze {
         })
     }
 
-    pub fn render(&self, renderer: &mut Renderer<'static>, w_height: u32, w_width: u32) {
-        let height: u32 = w_height / self.rows;
-        let width: u32 = w_width / self.cols;
+    pub fn render(&self, renderer: &mut Renderer<'static>) {
+        let height = 10;
+        let width = 10;
 
         let grey = Color::RGB(128, 128, 128);
         let white = Color::RGB(255, 255, 255);
@@ -93,13 +92,14 @@ impl Maze {
                     &Piece::Empty => renderer.set_draw_color(white),
                     &Piece::Exit => renderer.set_draw_color(yellow),
                     &Piece::Player(ref dir) =>  {
+                        renderer.set_draw_color(brown);
                         render_player(renderer, dir, x_loc, y_loc, width as i32, height as i32);
                         continue;
                     }
                 }
                 let rect = Rect::new(x_loc, y_loc, width, height);
 
-                renderer.draw_rect(rect);
+                renderer.fill_rect(rect).unwrap();
             }
         }
     }
@@ -122,5 +122,58 @@ impl Maze {
                 _ => continue,
             }
         };
+    }
+
+    fn find_player(&self) -> Option<(usize, usize, Direction)> {
+        for (y, row) in self.pieces.iter().enumerate() {
+            for (x, piece) in row.iter().enumerate() {
+                match piece {
+                    &Piece::Player(dir) => return Some((x, y, dir)),
+                    _ => continue,
+                };
+            }
+        }
+
+        None
+    }
+
+    fn change_player_dir(&mut self, new_dir: Direction) {
+        let (x, y, _) = self.find_player().unwrap();
+
+        self.pieces[y][x] = Piece::Player(new_dir);
+    }
+
+    fn move_player_forward(&mut self) -> bool {
+        let (x, y, dir) = self.find_player().unwrap();
+
+        let (new_x, new_y) = match self.pieces[y][x] {
+            Piece::Player(Direction::Left) => (x-1, y),
+            Piece::Player(Direction::Right) => (x+1, y),
+            Piece::Player(Direction::Up) => (x, y-1),
+            Piece::Player(Direction::Down) => (x, y+1),
+            _ => return false
+        };
+
+        if new_x < (self.cols as usize) && new_y < (self.rows as usize) {
+            match self.pieces[new_y][new_x] {
+                Piece::Empty => {
+                    self.pieces[new_y][new_x] = Piece::Player(dir);
+                    self.pieces[y][x] = Piece::Empty;
+                },
+                _ => return false
+            }
+        }
+
+        true
+    }
+
+    pub fn move_player(&mut self, req_dir: Direction) {
+        let (_, _, dir) = self.find_player().unwrap();
+
+        if dir == req_dir {
+            self.move_player_forward();
+        } else {
+            self.change_player_dir(req_dir);
+        }
     }
 }
