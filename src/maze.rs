@@ -16,6 +16,15 @@ pub enum Direction {
     Up,
 }
 
+fn get_dxdy(dir: Direction) -> (i32, i32) {
+    match dir {
+        Direction::Left => (-1, 0),
+        Direction::Right => (1, 0),
+        Direction::Up => (0, -1),
+        Direction::Down => (0, 1), 
+    }
+}
+
 pub enum Piece {
     Empty,
     Player(Direction),
@@ -153,14 +162,8 @@ impl Maze {
 
     fn move_player_forward(&mut self) -> GameState {
         let (x, y, dir) = self.find_player().unwrap();
-
-        let (new_x, new_y) = match self.pieces[y][x] {
-            Piece::Player(Direction::Left) => (x-1, y),
-            Piece::Player(Direction::Right) => (x+1, y),
-            Piece::Player(Direction::Up) => (x, y-1),
-            Piece::Player(Direction::Down) => (x, y+1),
-            _ => panic!("find_player returned non player location")
-        };
+        let (dx, dy) = get_dxdy(dir);
+        let (new_x, new_y) = (((x as i32)+dx) as usize, ((y as i32)+dy) as usize);
 
         if new_x < (self.cols as usize) && new_y < (self.rows as usize) {
             match self.pieces[new_y][new_x] {
