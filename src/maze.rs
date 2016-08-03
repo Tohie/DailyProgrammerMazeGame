@@ -33,6 +33,7 @@ fn get_dxdy(dir: Direction) -> (i32, i32) {
     }
 }
 
+#[derive(PartialEq)]
 pub enum Piece {
     Empty,
     Player(Direction),
@@ -107,7 +108,7 @@ impl Maze {
         let white = Color::RGB(255, 255, 255);
         let yellow = Color::RGB(255, 255, 0);
         let brown = Color::RGB(139, 69, 19);
-        let red = Color::RGB(255, 0, 0);
+        let green = Color::RGB(0, 255, 0);
 
         for (y, row) in self.pieces.iter().enumerate() {
             for (x, piece) in row.iter().enumerate() {
@@ -120,7 +121,7 @@ impl Maze {
                     &Piece::Empty => renderer.set_draw_color(white),
                     &Piece::Exit => renderer.set_draw_color(yellow),
                     &Piece::Player(ref dir) => {
-                        renderer.set_draw_color(red);
+                        renderer.set_draw_color(green);
                         render_triangle(renderer, dir, x_loc, y_loc, width as i32, height as i32);
                         continue;
                     },
@@ -221,7 +222,11 @@ impl Maze {
                         _ => return GameState::InvalidMove,
                     }
                 },
-                Some(&Piece::Troll(_)) => return GameState::Dead,
+                Some(&Piece::Troll(_)) | Some(&Piece::Player(_)) => {
+                    if piece == Piece::Player(dir) {
+                        return GameState::Dead;
+                    }
+                },
                 Some(&Piece::Exit) => return GameState::Won,
                 _ => return GameState::InvalidMove
             }
@@ -246,7 +251,7 @@ impl Maze {
         }
     }
 
-    pub fn move_trolls(&mut self) {
+    pub fn move_trolls(&mut self) -> GameState {
         let mut rng = rand::thread_rng();
         let trolls = self.find_trolls();
 
@@ -254,8 +259,13 @@ impl Maze {
             if rng.gen_weighted_bool(3) { // 1 in 3 chance to change dir
                 self.pieces[y][x] = Piece::Troll(rng.gen());
             } else {
-                self.move_piece_forward(Piece::Troll(dir), x, y, dir);
+                match self.move_piece_forward(Piece::Troll(dir), x, y, dir) {
+                    GameState::Dead => return GameState::Dead,
+                    _ => continue,
+                };
             }
         }
+
+        GameState::Moved
     }
 }

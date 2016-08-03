@@ -53,12 +53,12 @@ pub fn main() {
                             println!("You win!");
                             map = make_new_game();
                         },
-                        GameState::Dead => {
-                            println!("You were killed. RIP :(");
-                            map = make_new_game();
-                        }
+                        GameState::Dead => map = death_screen(),
                         _ => {
-                            map.move_trolls();
+                            match map.move_trolls() {
+                                GameState::Dead => map = death_screen(),
+                                _ => continue,
+                            }
                             continue;
                         },
                     };
@@ -81,4 +81,10 @@ fn make_new_game() -> maze::Maze {
     map.add_trolls(10);
 
     map
+}
+
+fn death_screen() -> maze::Maze {
+    println!("You were killed. RIP :(");
+
+    make_new_game()
 }
