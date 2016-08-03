@@ -57,7 +57,10 @@ pub fn main() {
                             println!("You were killed. RIP :(");
                             map = make_new_game();
                         }
-                        _ => continue,
+                        _ => {
+                            map.move_trolls();
+                            continue;
+                        },
                     };
                 }
                 _ => {}

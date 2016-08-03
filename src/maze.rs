@@ -7,6 +7,7 @@ use sdl2::render::Renderer;
 use sdl2::rect::{Rect, Point};
 use sdl2::pixels::Color;
 use rand::distributions::{IndependentSample, Range};
+use rand::{Rng, Rand};
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum Direction {
@@ -14,6 +15,13 @@ pub enum Direction {
     Right,
     Down,
     Up,
+}
+
+impl Rand for Direction {
+    fn rand<R: Rng>(rng: &mut R) -> Self {
+        let dirs = &[Direction::Down, Direction::Up, Direction::Right, Direction::Left];
+        *rng.choose(dirs).unwrap()
+    }
 }
 
 fn get_dxdy(dir: Direction) -> (i32, i32) {
@@ -170,12 +178,19 @@ impl Maze {
         None
     }
 
-    fn change_player_dir(&mut self, new_dir: Direction) -> GameState {
-        let (x, y, _) = self.find_player().unwrap();
+    fn find_trolls(&self) -> Vec<(usize, usize, Direction)> {
+        let mut trolls = Vec::new();
 
-        self.pieces[y][x] = Piece::Player(new_dir);
+        for (y, row) in self.pieces.iter().enumerate() {
+            for (x, piece) in row.iter().enumerate() {
+                match piece {
+                    &Piece::Troll(dir) => trolls.push((x, y, dir)),
+                    _ => continue,
+                };
+            }
+        }
 
-        GameState::Moved
+        trolls
     }
 
     fn move_piece_forward(&mut self, piece: Piece, x: usize, y: usize, dir: Direction) -> GameState {
@@ -208,18 +223,32 @@ impl Maze {
         GameState::Moved
     }
 
-    pub fn move_player_forward(&mut self) -> GameState {
+    fn move_player_forward(&mut self) -> GameState {
         let (x, y, dir) = self.find_player().unwrap();
         self.move_piece_forward(Piece::Player(dir), x, y, dir)
     }
 
     pub fn move_player(&mut self, req_dir: Direction) -> GameState {
-        let (_, _, dir) = self.find_player().unwrap();
+        let (x, y, dir) = self.find_player().unwrap();
 
         if dir == req_dir {
             self.move_player_forward()
         } else {
-            self.change_player_dir(req_dir)
+            self.pieces[y][x] = Piece::Player(req_dir);
+            GameState::Moved
+        }
+    }
+
+    pub fn move_trolls(&mut self) {
+        let mut rng = rand::thread_rng();
+        let trolls = self.find_trolls();
+
+        for &(x, y, dir) in trolls.iter() {
+            if rng.gen_weighted_bool(3) { // 1 in 3 chance to change dir
+                self.pieces[y][x] = Piece::Troll(rng.gen());
+            } else {
+                self.move_piece_forward(Piece::Troll(dir), x, y, dir);
+            }
         }
     }
 }
