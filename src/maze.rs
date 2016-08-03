@@ -198,15 +198,15 @@ impl Maze {
         let (new_x, new_y) = (((x as i32)+dx) as usize, ((y as i32)+dy) as usize);
 
         if new_x < (self.cols as usize) && new_y < (self.rows as usize) {
-            match self.pieces[new_y][new_x] {
-                Piece::Empty => {
+            match self.pieces.get(new_y).and_then(|rows| rows.get(new_x)) {
+                Some(&Piece::Empty) => {
                     self.pieces[new_y][new_x] = piece;
                     self.pieces[y][x] = Piece::Empty;
                 },
-                Piece::Boulder => {
+                Some(&Piece::Boulder) => {
                     let (x_1, y_1) = (((new_x as i32)+dx) as usize, ((new_y as i32)+dy) as usize);
-                    match self.pieces[y_1][x_1] {
-                        Piece::Empty | Piece::Troll(_) => {
+                    match self.pieces.get(y_1).and_then(|r| r.get(x_1)) {
+                        Some(&Piece::Empty) | Some(&Piece::Troll(_)) => {
                             self.pieces[y_1][x_1] = Piece::Boulder;
                             self.pieces[new_y][new_x] = piece;
                             self.pieces[y][x] = Piece::Empty;
@@ -214,8 +214,8 @@ impl Maze {
                         _ => return GameState::InvalidMove,
                     }
                 },
-                Piece::Troll(_) => return GameState::Dead,
-                Piece::Exit => return GameState::Won,
+                Some(&Piece::Troll(_)) => return GameState::Dead,
+                Some(&Piece::Exit) => return GameState::Won,
                 _ => return GameState::InvalidMove
             }
         }
