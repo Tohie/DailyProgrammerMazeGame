@@ -112,7 +112,9 @@ impl Maze {
         for (y, row) in self.pieces.iter().enumerate() {
             for (x, piece) in row.iter().enumerate() {
                 let x_loc = (x as i32) * (width as i32);
-                let y_loc = (y as i32) * (height as i32);  
+                let y_loc = (y as i32) * (height as i32);
+
+                renderer.fill_rect(Rect::new(x_loc, y_loc, width, height)).unwrap();
                 match piece {
                     &Piece::Boulder => renderer.set_draw_color(grey),
                     &Piece::Empty => renderer.set_draw_color(white),
@@ -131,6 +133,7 @@ impl Maze {
                 let rect = Rect::new(x_loc, y_loc, width, height);
 
                 renderer.fill_rect(rect).unwrap();
+                renderer.set_draw_color(white);
             }
         }
     }
