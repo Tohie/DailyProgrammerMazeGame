@@ -222,9 +222,15 @@ impl Maze {
                         _ => return GameState::InvalidMove,
                     }
                 },
-                Some(&Piece::Troll(_)) | Some(&Piece::Player(_)) => {
+                // make sure not to return GameState::Dead when troll runs into troll
+                Some(&Piece::Troll(_)) => {
                     if piece == Piece::Player(dir) {
-                        return GameState::Dead;
+                        return GameState::Dead // player has run into a troll
+                    }
+                }, 
+                Some(&Piece::Player(_)) => {
+                    if piece == Piece::Troll(dir) {
+                        return GameState::Dead; // troll has run into player
                     }
                 },
                 Some(&Piece::Exit) => return GameState::Won,
