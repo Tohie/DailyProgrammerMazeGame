@@ -30,7 +30,7 @@ pub enum Piece {
     Player(Direction),
     Boulder,
     Exit,
-    Troll,
+    Troll(Direction),
 }
 
 pub enum GameState {
@@ -40,7 +40,7 @@ pub enum GameState {
     Dead
 }
 
-fn render_player(renderer: &mut Renderer<'static>, dir: &Direction, x: i32, y: i32, width: i32, height: i32) {
+fn render_triangle(renderer: &mut Renderer<'static>, dir: &Direction, x: i32, y: i32, width: i32, height: i32) {
     let points = match dir {
         &Direction::Left => vec!(Point::new(x+(width/2), y+height), Point::new(x, y+(height/2)), Point::new(x+(width/2), y)),
         &Direction::Right => vec!(Point::new(x+(width/2), y+height), Point::new(x+width, y+(height/2)), Point::new(x+(width/2), y)),
@@ -99,6 +99,7 @@ impl Maze {
         let white = Color::RGB(255, 255, 255);
         let yellow = Color::RGB(255, 255, 0);
         let brown = Color::RGB(139, 69, 19);
+        let red = Color::RGB(255, 0, 0);
 
         for (y, row) in self.pieces.iter().enumerate() {
             for (x, piece) in row.iter().enumerate() {
@@ -108,10 +109,14 @@ impl Maze {
                     &Piece::Boulder => renderer.set_draw_color(grey),
                     &Piece::Empty => renderer.set_draw_color(white),
                     &Piece::Exit => renderer.set_draw_color(yellow),
-                    &Piece::Troll => renderer.set_draw_color(brown),
-                    &Piece::Player(ref dir) =>  {
+                    &Piece::Player(ref dir) => {
+                        renderer.set_draw_color(red);
+                        render_triangle(renderer, dir, x_loc, y_loc, width as i32, height as i32);
+                        continue;
+                    },
+                    &Piece::Troll(ref dir) => {
                         renderer.set_draw_color(brown);
-                        render_player(renderer, dir, x_loc, y_loc, width as i32, height as i32);
+                        render_triangle(renderer, dir, x_loc, y_loc, width as i32, height as i32);
                         continue;
                     }
                 }
@@ -148,7 +153,7 @@ impl Maze {
 
     pub fn add_trolls(&mut self, amount: usize) {
         for _ in 0..amount {
-            self.add_piece(Piece::Troll);
+            self.add_piece(Piece::Troll(Direction::Up));
         }
     }
 
@@ -173,35 +178,39 @@ impl Maze {
         GameState::Moved
     }
 
-    fn move_player_forward(&mut self) -> GameState {
-        let (x, y, dir) = self.find_player().unwrap();
+    fn move_piece_forward(&mut self, piece: Piece, x: usize, y: usize, dir: Direction) -> GameState {
         let (dx, dy) = get_dxdy(dir);
         let (new_x, new_y) = (((x as i32)+dx) as usize, ((y as i32)+dy) as usize);
 
         if new_x < (self.cols as usize) && new_y < (self.rows as usize) {
             match self.pieces[new_y][new_x] {
                 Piece::Empty => {
-                    self.pieces[new_y][new_x] = Piece::Player(dir);
+                    self.pieces[new_y][new_x] = piece;
                     self.pieces[y][x] = Piece::Empty;
                 },
                 Piece::Boulder => {
                     let (x_1, y_1) = (((new_x as i32)+dx) as usize, ((new_y as i32)+dy) as usize);
                     match self.pieces[y_1][x_1] {
-                        Piece::Empty | Piece::Troll => {
+                        Piece::Empty | Piece::Troll(_) => {
                             self.pieces[y_1][x_1] = Piece::Boulder;
-                            self.pieces[new_y][new_x] = Piece::Player(dir);
+                            self.pieces[new_y][new_x] = piece;
                             self.pieces[y][x] = Piece::Empty;
                         },
                         _ => return GameState::InvalidMove,
                     }
                 },
-                Piece::Troll => return GameState::Dead,
+                Piece::Troll(_) => return GameState::Dead,
                 Piece::Exit => return GameState::Won,
                 _ => return GameState::InvalidMove
             }
         }
 
         GameState::Moved
+    }
+
+    pub fn move_player_forward(&mut self) -> GameState {
+        let (x, y, dir) = self.find_player().unwrap();
+        self.move_piece_forward(Piece::Player(dir), x, y, dir)
     }
 
     pub fn move_player(&mut self, req_dir: Direction) -> GameState {
