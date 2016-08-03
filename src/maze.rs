@@ -171,6 +171,17 @@ impl Maze {
                     self.pieces[new_y][new_x] = Piece::Player(dir);
                     self.pieces[y][x] = Piece::Empty;
                 },
+                Piece::Boulder => {
+                    let (x_1, y_1) = (((new_x as i32)+dx) as usize, ((new_y as i32)+dy) as usize);
+                    match self.pieces[y_1][x_1] {
+                        Piece::Empty => {
+                            self.pieces[y_1][x_1] = Piece::Boulder;
+                            self.pieces[new_y][new_x] = Piece::Player(dir);
+                            self.pieces[y][x] = Piece::Empty;
+                        }
+                        _ => return GameState::InvalidMove,
+                    }
+                }
                 Piece::Exit => return GameState::Won,
                 _ => return GameState::InvalidMove
             }
