@@ -78,7 +78,7 @@ pub fn main() {
 fn make_new_game() -> maze::Maze {
     let mut map = maze::Maze::from_file("./res/map.txt").unwrap();
     map.add_player();
-    map.add_trolls(3);
+    map.add_trolls(10);
 
     map
 }

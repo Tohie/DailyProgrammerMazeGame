@@ -211,7 +211,7 @@ impl Maze {
                     let (x_1, y_1) = (((new_x as i32)+dx) as usize, ((new_y as i32)+dy) as usize);
                     match self.pieces.get(y_1).and_then(|r| r.get(x_1)) {
                         Some(&Piece::Empty) | Some(&Piece::Troll(_)) => {
-                            self.pieces[y_1][x_1] = Piece::Boulder;
+                            self.pieces[y_1][x_1] = Piece::Boulder; // This kills the troll
                             self.pieces[new_y][new_x] = piece;
                             self.pieces[y][x] = Piece::Empty;
                         },
